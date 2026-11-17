@@ -42,3 +42,8 @@ def test_recorder_writes_stereo_wav(tmp_path):
     p = r.save(tmp_path / "x.wav")
     with wave.open(str(p)) as w:
         assert (w.getnchannels(), w.getframerate(), w.getnframes()) == (2, AI_RATE, 320)
+
+
+def test_voice_delivery_tags_are_not_transcript_words():
+    from callbridge.call import AUDIO_TAG
+    assert " ".join(AUDIO_TAG.sub(" ", "[warm] We're an AI studio [laughs] in Israel").split()) == "We're an AI studio in Israel"

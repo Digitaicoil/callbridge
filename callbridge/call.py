@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import os
+import re
 import sys
 import threading
 import time
@@ -16,6 +17,7 @@ from .elevenlabs import Client
 from .record import CallRecord
 from .sinks import dispatch
 
+AUDIO_TAG = re.compile(r"\s*\[[a-z][a-z \-]{0,30}\]\s*", re.I)
 LOCK = Path("/tmp/callbridge-call.lock")
 
 
@@ -79,6 +81,9 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
     done = threading.Event()
 
     def said(who: str, text: str) -> None:
+        text = " ".join(AUDIO_TAG.sub(" ", text).split())     # v3/v4 voices write delivery tags like [warm]; not words
+        if not text:
+            return
         record.transcript.append(f"{who}: {text}")
         print(f"{who}: {text}", flush=True)
 
