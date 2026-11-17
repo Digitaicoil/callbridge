@@ -71,3 +71,14 @@ def test_hubspot_creates_contact_then_note(monkeypatch):
     assert paths == ["/crm/v3/objects/contacts/search", "/crm/v3/objects/contacts", "/crm/v3/objects/notes"]
     assert calls[1][1]["properties"] == {"phone": "+15551234567", "firstname": "Dana", "lastname": "Levi"}
     assert calls[2][1]["associations"][0]["to"]["id"] == "c1"
+
+
+def test_webhook_sends_bearer_token_for_crm_apis(monkeypatch):
+    seen = {}
+
+    def post(url, json, headers, timeout):
+        seen.update(headers=headers)
+        return httpx.Response(200, request=httpx.Request("POST", url))
+    monkeypatch.setattr(httpx, "post", post)
+    webhook.send(rec(), {"CALLBRIDGE_WEBHOOK_URL": "https://example.com/hook", "CALLBRIDGE_WEBHOOK_TOKEN": "k"})
+    assert seen["headers"] == {"Authorization": "Bearer k"}

@@ -16,6 +16,7 @@ class CallRecord:
     conversation_id: str | None = None
     recording: str | None = None       # path to the stereo WAV when CALLBRIDGE_RECORD=1
     context: str = ""                  # what you told the agent about this call
+    script: str = ""                   # the agent's instructions (its system prompt) this call ran with
 
     def as_dict(self) -> dict:
         return asdict(self)

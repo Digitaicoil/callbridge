@@ -110,7 +110,9 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
         record.recording = str(rec.save(s.data_dir / "recordings" / f"{stamp}-{direction}.wav"))
     record.conversation_id = getattr(conv, "_conversation_id", None)
     if record.conversation_id:
-        record.summary, record.data, _ = Client(s.api_key).analysis(record.conversation_id)
+        client = Client(s.api_key)
+        record.summary, record.data, _ = client.analysis(record.conversation_id)
+        record.script = client.script(agent_id)
     if (record.data or {}).get("outcome") == "do_not_call":
         dnc.add(s.dnc_file, number)
     results = dispatch(record, s.sinks)

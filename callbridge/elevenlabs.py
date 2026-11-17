@@ -85,6 +85,13 @@ class Client:
         r.raise_for_status()
         return r.json()
 
+    def script(self, agent_id: str) -> str:
+        """The agent's system prompt, for the call record. Empty if it can't be read: a record never fails on it."""
+        try:
+            return self.agent(agent_id)["conversation_config"]["agent"]["prompt"]["prompt"] or ""
+        except (httpx.HTTPError, KeyError, TypeError):
+            return ""
+
     def calls(self, agent_id: str, n: int = 10) -> list[dict]:
         r = self.http.get(f"{API}/conversations", params={"agent_id": agent_id, "page_size": n})
         r.raise_for_status()

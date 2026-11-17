@@ -23,6 +23,7 @@ A failing sink is logged and never stops the others.
 | `conversation_id` | the ElevenLabs conversation, for the dashboard |
 | `recording` | WAV path when `CALLBRIDGE_RECORD=1` |
 | `context` | what you told the agent before an outbound call |
+| `script` | the agent's instructions (system prompt) the call ran with, so your CRM shows which script was used |
 
 `outcome` is one of `meeting_booked`, `message_taken`, `callback_requested`, `not_interested`, `do_not_call`,
 `no_answer`, `other`. A `do_not_call` outcome also adds the number to the do-not-call list.
@@ -66,6 +67,7 @@ the summary, the extracted fields and the transcript.
 ```bash
 CALLBRIDGE_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/...
 CALLBRIDGE_WEBHOOK_SECRET=some-long-random-string     # optional; sent as X-CallBridge-Secret
+CALLBRIDGE_WEBHOOK_TOKEN=your-crm-api-key              # optional; sent as Authorization: Bearer (for your own CRM's API)
 ```
 
 The whole record is POSTed as JSON. Recipes:
