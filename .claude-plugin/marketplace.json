@@ -1,0 +1,11 @@
+{
+  "name": "callbridge",
+  "owner": { "name": "Itai Boublil", "url": "https://digitai.co.il" },
+  "plugins": [
+    {
+      "name": "callbridge",
+      "source": "./",
+      "description": "An AI phone agent on your own iPhone number, set up by Claude in one conversation."
+    }
+  ]
+}

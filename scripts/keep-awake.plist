@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Keeps the Mac's display awake so it never locks (a locked Mac can't press the call buttons).
+     cp scripts/keep-awake.plist ~/Library/LaunchAgents/audio.callbridge.keepawake.plist
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/audio.callbridge.keepawake.plist
+     Undo: launchctl bootout gui/$(id -u)/audio.callbridge.keepawake -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>audio.callbridge.keepawake</string>
+  <key>ProgramArguments</key><array><string>/usr/bin/caffeinate</string><string>-d</string><string>-i</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict>
+</plist>

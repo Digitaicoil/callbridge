@@ -1,0 +1,10 @@
+{
+  "name": "callbridge",
+  "version": "0.1.0",
+  "description": "Set up an AI phone agent on your own iPhone number: Claude installs CallBridge, builds the audio cables, creates your ElevenLabs receptionist or sales agent, connects your CRM and runs a test call with you.",
+  "author": { "name": "Itai Boublil", "url": "https://digitai.co.il" },
+  "homepage": "https://github.com/Digitaicoil/callbridge",
+  "repository": "https://github.com/Digitaicoil/callbridge",
+  "license": "MIT",
+  "keywords": ["voice-agent", "ai-receptionist", "elevenlabs", "iphone", "phone-calls", "crm"]
+}

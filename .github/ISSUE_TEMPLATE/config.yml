@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / show what you built
+    url: https://github.com/Digitaicoil/callbridge/discussions
+    about: Setup questions, ideas and demos go to Discussions.
+  - name: Security issue
+    url: https://github.com/Digitaicoil/callbridge/security/advisories/new
+    about: Report vulnerabilities privately.

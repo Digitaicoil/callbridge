@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" role="img" aria-label="CallBridge: an AI phone agent on your own iPhone number">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16C784"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#0EA5E9" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#0B0F14" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="400" fill="#0B0F14"/>
+  <rect width="1280" height="400" fill="url(#glow)"/>
+  <g transform="translate(88 88) scale(0.875)">
+    <path d="M44 172 Q128 70 212 172" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round"/>
+    <rect x="38" y="150" width="16" height="56" rx="8" fill="#E8EEF4"/>
+    <rect x="202" y="150" width="16" height="56" rx="8" fill="#E8EEF4"/>
+    <g fill="url(#g)">
+      <rect x="86" y="138" width="10" height="34" rx="5"/><rect x="104" y="122" width="10" height="66" rx="5"/>
+      <rect x="122" y="108" width="10" height="94" rx="5"/><rect x="140" y="122" width="10" height="66" rx="5"/>
+      <rect x="158" y="138" width="10" height="34" rx="5"/>
+    </g>
+  </g>
+  <text x="352" y="196" font-family="-apple-system, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="88" font-weight="700" fill="#F3F6F9" letter-spacing="-2">CallBridge</text>
+  <text x="356" y="252" font-family="-apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="30" fill="#9AA7B4">An AI phone agent on your own iPhone number.</text>
+  <text x="356" y="296" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="22" fill="#16C784">answers calls · makes calls · writes to your CRM</text>
+</svg>

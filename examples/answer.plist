@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Runs the receptionist whenever you're logged in. Replace REPLACE_WITH_PATH with the output of: which callbridge
+     cp examples/answer.plist ~/Library/LaunchAgents/audio.callbridge.answer.plist
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/audio.callbridge.answer.plist
+     Logs: /tmp/callbridge-answer.log -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>audio.callbridge.answer</string>
+  <key>ProgramArguments</key><array><string>REPLACE_WITH_PATH</string><string>answer</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/callbridge-answer.log</string>
+  <key>StandardErrorPath</key><string>/tmp/callbridge-answer.log</string>
+</dict>
+</plist>

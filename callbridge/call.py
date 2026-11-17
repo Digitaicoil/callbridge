@@ -1,0 +1,141 @@
+"""One phone call with the voice agent in it, outbound (we dial) or inbound (we answer)."""
+from __future__ import annotations
+
+import fcntl
+import os
+import sys
+import threading
+import time
+from datetime import datetime
+from pathlib import Path
+
+from . import dnc, macos
+from .audio import CableAudio, Recorder
+from .config import Settings
+from .elevenlabs import Client
+from .record import CallRecord
+from .sinks import dispatch
+
+LOCK = Path("/tmp/callbridge-call.lock")
+
+
+class Busy(RuntimeError):
+    pass
+
+
+def preflight(s: Settings, need_screen: bool = True) -> None:
+    d = macos.devices()
+    missing = [n for n in (s.call_in, s.agent_out) if n not in d["all"]]
+    if missing:
+        raise SystemExit(f"virtual cables not installed: {', '.join(missing)} (run: callbridge cables install)")
+    if need_screen and macos.screen_locked():
+        raise SystemExit("the Mac's screen is locked: the call prompt can't be pressed. Unlock it (docs/setup.md#keep-awake)")
+
+
+def _quiet(fn) -> None:
+    try:
+        fn()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def run_call(s: Settings, direction: str, number: str, context: str = "", place=None) -> CallRecord:
+    """direction "outbound": dial `number`. "inbound": the call is ringing; `place` answers it.
+    Returns the finished CallRecord (also saved and sent to every configured sink)."""
+    from elevenlabs.client import ElevenLabs
+    from elevenlabs.conversational_ai.conversation import Conversation
+
+    agent_id = s.outbound_agent if direction == "outbound" else s.inbound_agent
+    if not agent_id:
+        raise SystemExit(f"CALLBRIDGE_{direction.upper()}_AGENT_ID is not set (run: callbridge agent create ...)")
+    if direction == "outbound" and dnc.blocked(s.dnc_file, number):
+        raise SystemExit(f"{number} is on the do-not-call list")
+
+    lock = LOCK.open("w")
+    try:                                   # one line, one call at a time
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        raise Busy("another call is in progress") from None
+
+    prev = macos.devices()
+    macos.audiodev("set-input", s.agent_out), macos.audiodev("set-output", s.call_in)
+    record = CallRecord(direction=direction, number=number, started_at=datetime.now().isoformat(timespec="seconds"),
+                        context=context)
+    rec = Recorder() if s.record else None
+    audio = CableAudio(s.call_in, s.agent_out, gain=s.gain, ring_gate=(direction == "outbound"), recorder=rec)
+    done = threading.Event()
+
+    def said(who: str, text: str) -> None:
+        record.transcript.append(f"{who}: {text}")
+        print(f"{who}: {text}", flush=True)
+
+    conv = Conversation(ElevenLabs(api_key=s.api_key), agent_id, requires_auth=True, audio_interface=audio,
+                        callback_agent_response=lambda t: said("Agent", t),
+                        callback_user_transcript=lambda t: said("Caller", t),
+                        callback_disconnect=lambda *_: done.set())
+    t0 = time.time()
+    try:
+        if direction == "outbound":
+            macos.release_iphone(s.iphone_udid)
+            conv.start_session()           # listening before the phone rings; the ring gate keeps it quiet
+            if context:
+                conv.send_contextual_update(f"About this call: {context}")
+            macos.dial(number)
+        else:
+            if place is not None:
+                place()                    # press Accept, then start talking (the greeting needs a live line)
+            conv.start_session()
+            conv.send_contextual_update(f"Incoming call from {number}." + (f" {context}" if context else ""))
+        t0 = time.time()
+
+        def watch() -> None:               # the other side hung up: the line drops to pure digital silence
+            while not done.wait(1):
+                if audio.last_sound and time.time() - audio.last_sound > s.silence_hangup_s:
+                    print("line went silent: the other side hung up", flush=True)
+                    done.set()
+        threading.Thread(target=watch, daemon=True).start()
+        done.wait(s.max_call_s)
+    finally:
+        record.duration_s = int(time.time() - t0)
+        t = threading.Thread(target=lambda: _quiet(conv.end_session), daemon=True)
+        t.start(), t.join(10)              # a dead socket can hang end_session: never let it keep the call open
+        macos.hang_up()
+        for kind in ("input", "output"):   # give the Mac its own mic and speakers back (never "back" to a cable)
+            if prev.get(kind) and prev[kind] not in (s.call_in, s.agent_out):
+                macos.audiodev(f"set-{kind}", prev[kind])
+        fcntl.flock(lock, fcntl.LOCK_UN)
+
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    if rec is not None:
+        record.recording = str(rec.save(s.data_dir / "recordings" / f"{stamp}-{direction}.wav"))
+    record.conversation_id = getattr(conv, "_conversation_id", None)
+    if record.conversation_id:
+        record.summary, record.data, _ = Client(s.api_key).analysis(record.conversation_id)
+    if (record.data or {}).get("outcome") == "do_not_call":
+        dnc.add(s.dnc_file, number)
+    results = dispatch(record, s.sinks)
+    print(f"sent: {results}", flush=True)
+    return record
+
+
+def answer_forever(s: Settings, poll_s: float = 1.0) -> None:
+    """Receptionist mode: wait for incoming calls on the Mac and answer each one with the inbound agent."""
+    preflight(s)
+    print(f"waiting for calls (accept buttons: {', '.join(s.accept_labels)}). Ctrl-C to stop.", flush=True)
+    while True:
+        caller = macos.incoming(s.accept_labels)
+        if caller:
+            print(f"ringing: {caller}", flush=True)
+            try:
+                run_call(s, "inbound", caller, place=lambda: macos.accept(s.accept_labels))
+            except Busy:
+                pass
+            except Exception as e:  # noqa: BLE001  one bad call never stops the receptionist
+                print(f"call failed: {e}", file=sys.stderr, flush=True)
+            print("waiting for calls", flush=True)
+        time.sleep(poll_s)
+
+
+def exit_hard(code: int = 0) -> None:
+    sys.stdout.flush(), sys.stderr.flush()
+    os._exit(code)     # the SDK's websocket/audio threads can keep the process alive after a call
