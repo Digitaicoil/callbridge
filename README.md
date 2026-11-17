@@ -186,6 +186,7 @@ Read [docs/responsible-use.md](docs/responsible-use.md) before your first outbou
 - [ ] Calendar booking (Google Calendar / Cal.com) as an agent tool
 - [ ] Menu-bar app with call log and on/off switch
 - [ ] More sinks: Pipedrive, Google Sheets, Notion (PRs welcome)
+- [ ] Fully local mode: Whisper for listening, any LLM for thinking, a local voice (e.g. Voicebox) for speaking
 
 ## Contributing
 
