@@ -4,9 +4,9 @@
 
 <p align="center">
   <a href="https://github.com/Digitaicoil/callbridge/actions/workflows/ci.yml"><img src="https://github.com/Digitaicoil/callbridge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16C784" alt="MIT license"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-0B0F14?logo=apple" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/python-3.10%2B-0EA5E9?logo=python&logoColor=white" alt="Python 3.10+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c6f432" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-0f0d17?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/python-3.10%2B-6b3cff?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="#set-it-up-with-claude-code"><img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757" alt="Claude Code plugin"></a>
 </p>
 
