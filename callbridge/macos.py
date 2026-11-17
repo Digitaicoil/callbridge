@@ -68,7 +68,9 @@ def incoming(accept_labels: list[str]) -> str | None:
     buttons = banner("list").splitlines()
     if not any(b in buttons for b in accept_labels):
         return None
-    texts = [t for t in banner("texts").splitlines() if t.strip()]
+    bidi = dict.fromkeys(map(ord, "\u202a\u202b\u202c\u200e\u200f\u2066\u2067\u2068\u2069"))   # direction marks around names
+    texts = [t.translate(bidi).strip() for t in banner("texts").splitlines()]
+    texts = [t for t in texts if t and t != "missing value"]
     return texts[0] if texts else "unknown caller"
 
 

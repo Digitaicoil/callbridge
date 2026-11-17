@@ -36,7 +36,14 @@ on run argv
 					if cmd is "list" then
 						set out to out & (description of b) & linefeed
 					else
-						set out to out & (value of b) & linefeed
+						-- the caller's name/number sits in value, name or description depending on the macOS version
+						repeat with v in {value of b, name of b, description of b}
+							set s to contents of v
+							if s is not missing value and s is not "" and s is not "text" then
+								set out to out & s & linefeed
+								exit repeat
+							end if
+						end repeat
 					end if
 				end try
 			end repeat

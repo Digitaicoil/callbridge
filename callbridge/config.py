@@ -10,9 +10,9 @@ from pathlib import Path
 ENV_FILES = (Path.cwd() / ".env", Path.home() / ".config" / "callbridge" / ".env")
 
 
-def load_env(files=ENV_FILES) -> None:
+def load_env(files=None) -> None:
     """Fill os.environ from the first .env files found. Real environment variables always win."""
-    for f in files:
+    for f in ENV_FILES if files is None else files:
         if not f.is_file():
             continue
         for line in f.read_text().splitlines():

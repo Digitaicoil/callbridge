@@ -39,6 +39,19 @@ def _quiet(fn) -> None:
         pass
 
 
+def _tell(conv, text: str, wait_s: float = 8.0) -> None:
+    """Give the agent background mid-call. start_session() returns before the websocket is up, so wait for it;
+    a call never fails over this."""
+    end = time.time() + wait_s
+    while time.time() < end:
+        try:
+            conv.send_contextual_update(text)
+            return
+        except RuntimeError:       # "Session not started or websocket not connected" (yet)
+            time.sleep(0.1)
+    print("could not give the agent the call's context (websocket never connected)", file=sys.stderr, flush=True)
+
+
 def run_call(s: Settings, direction: str, number: str, context: str = "", place=None) -> CallRecord:
     """direction "outbound": dial `number`. "inbound": the call is ringing; `place` answers it.
     Returns the finished CallRecord (also saved and sent to every configured sink)."""
@@ -75,17 +88,17 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
                         callback_disconnect=lambda *_: done.set())
     t0 = time.time()
     try:
+        macos.release_iphone(s.iphone_udid)   # both ways: a running WebDriverAgent pulls the call onto the phone
         if direction == "outbound":
-            macos.release_iphone(s.iphone_udid)
             conv.start_session()           # listening before the phone rings; the ring gate keeps it quiet
             if context:
-                conv.send_contextual_update(f"About this call: {context}")
+                _tell(conv, f"About this call: {context}")
             macos.dial(number)
         else:
             if place is not None:
                 place()                    # press Accept, then start talking (the greeting needs a live line)
             conv.start_session()
-            conv.send_contextual_update(f"Incoming call from {number}." + (f" {context}" if context else ""))
+            _tell(conv, f"Incoming call from {number}." + (f" {context}" if context else ""))
         t0 = time.time()
 
         def watch() -> None:               # the other side hung up: the line drops to pure digital silence
