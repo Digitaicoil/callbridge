@@ -138,7 +138,7 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
     return record
 
 
-def answer_forever(s: Settings, poll_s: float = 1.0) -> None:
+def answer_forever(s: Settings, poll_s: float = 0.25) -> None:
     """Receptionist mode: wait for incoming calls on the Mac and answer each one with the inbound agent."""
     preflight(s)
     print(f"waiting for calls (accept buttons: {', '.join(s.accept_labels)}). Ctrl-C to stop.", flush=True)
@@ -152,7 +152,10 @@ def answer_forever(s: Settings, poll_s: float = 1.0) -> None:
                 pass
             except Exception as e:  # noqa: BLE001  one bad call never stops the receptionist
                 print(f"call failed: {e}", file=sys.stderr, flush=True)
-            print("waiting for calls", flush=True)
+            # The SDK's websocket threads outlive a call, and a second call in the same process stayed silent
+            # (keepalive ping timeout). Start every call from a fresh process.
+            sys.stdout.flush(), sys.stderr.flush()
+            os.execv(sys.executable, [sys.executable, *sys.argv])
         time.sleep(poll_s)
 
 

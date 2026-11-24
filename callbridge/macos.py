@@ -7,6 +7,7 @@ from pathlib import Path
 
 NATIVE = Path(__file__).resolve().parent / "native"
 AUDIODEV = Path.home() / "Library" / "Caches" / "callbridge" / "audiodev"
+CALLBANNER = AUDIODEV.with_name("callbanner")
 
 
 def audiodev(*args: str) -> str:
@@ -29,9 +30,13 @@ def devices() -> dict:
 
 
 def banner(*args: str) -> str:
-    """List, read or press buttons on macOS call banners (Notification Center)."""
-    return subprocess.run(["osascript", str(NATIVE / "callbanner.applescript"), *args],
-                          capture_output=True, text=True).stdout.strip()
+    """List, read or press buttons on macOS call banners (Notification Center). The Swift helper reads them in
+    ~50 ms; the AppleScript fallback (no swiftc) takes 1-2 s per look, which costs the caller several rings."""
+    if not CALLBANNER.exists():
+        CALLBANNER.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["swiftc", "-O", str(NATIVE / "callbanner.swift"), "-o", str(CALLBANNER)], capture_output=True)
+    cmd = [str(CALLBANNER)] if CALLBANNER.exists() else ["osascript", str(NATIVE / "callbanner.applescript")]
+    return subprocess.run([*cmd, *args], capture_output=True, text=True).stdout.strip()
 
 
 def screen_locked() -> bool:
@@ -69,7 +74,7 @@ def incoming(accept_labels: list[str]) -> str | None:
     if not any(b in buttons for b in accept_labels):
         return None
     bidi = dict.fromkeys(map(ord, "\u202a\u202b\u202c\u200e\u200f\u2066\u2067\u2068\u2069"))   # direction marks around names
-    texts = [t.translate(bidi).strip() for t in banner("texts").splitlines()]
+    texts = [t.translate(bidi).strip() for t in banner("texts", *accept_labels).splitlines()]   # the call's banner only
     texts = [t for t in texts if t and t != "missing value"]
     return texts[0] if texts else "unknown caller"
 
