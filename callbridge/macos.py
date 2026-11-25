@@ -1,6 +1,7 @@
 """The Mac side of a call: default audio devices, the call banners, dialing, answering and hanging up."""
 from __future__ import annotations
 
+import json
 import subprocess
 import time
 from pathlib import Path
@@ -8,6 +9,8 @@ from pathlib import Path
 NATIVE = Path(__file__).resolve().parent / "native"
 AUDIODEV = Path.home() / "Library" / "Caches" / "callbridge" / "audiodev"
 CALLBANNER = AUDIODEV.with_name("callbanner")
+MENUBAR = AUDIODEV.with_name("CallBridge.app")
+SAVED = AUDIODEV.with_name("devices-before-call.json")
 
 
 def audiodev(*args: str) -> str:
@@ -27,6 +30,64 @@ def devices() -> dict:
         else:
             d[k] = v
     return d
+
+
+def remember_devices(before: dict, cables: tuple[str, ...]) -> None:
+    """Save the Mac's own mic and speakers before a call points them at the cables (never a cable itself)."""
+    keep = {k: before[k] for k in ("input", "output") if before.get(k) and before[k] not in cables}
+    if keep:
+        SAVED.parent.mkdir(parents=True, exist_ok=True)
+        SAVED.write_text(json.dumps({**_saved(), **keep}))
+
+
+def _saved() -> dict:
+    try:
+        return json.loads(SAVED.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _fallback(kind: str, names: list[str], cables: tuple[str, ...]) -> str | None:
+    words = ("Speakers", "Headphones", "AirPods") if kind == "output" else ("Microphone", "AirPods")
+    return next((n for n in names if n not in cables and any(w in n for w in words)), None)
+
+
+def restore_devices(cables: tuple[str, ...]) -> dict:
+    """Give the Mac its mic and speakers back if a cable is still the default (a call that was stopped or crashed).
+    Returns {kind: device} for what it changed."""
+    now, saved, changed = devices(), _saved(), {}
+    for kind in ("input", "output"):
+        if now.get(kind) not in cables:
+            continue
+        target = saved.get(kind) if saved.get(kind) in now["all"] else _fallback(kind, now["all"], cables)
+        if target:
+            audiodev(f"set-{kind}", target)
+            if kind == "output":
+                audiodev("set-system-output", target)
+            changed[kind] = target
+    return changed
+
+
+def menubar_app() -> Path:
+    """Build the menu-bar app (Swift, no Xcode project) once; rebuilt when the source is newer."""
+    src, exe = NATIVE / "menubar.swift", MENUBAR / "Contents" / "MacOS" / "CallBridge"
+    if not exe.exists() or exe.stat().st_mtime < src.stat().st_mtime:
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        (MENUBAR / "Contents" / "Info.plist").write_text(INFO_PLIST)
+        subprocess.run(["swiftc", "-O", str(src), "-o", str(exe)], check=True)
+    return MENUBAR
+
+
+INFO_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>CallBridge</string>
+  <key>CFBundleIdentifier</key><string>dev.callbridge.menubar</string>
+  <key>CFBundleExecutable</key><string>CallBridge</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSUIElement</key><true/>
+</dict></plist>
+"""
 
 
 def banner(*args: str) -> str:

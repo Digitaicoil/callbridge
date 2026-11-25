@@ -36,8 +36,8 @@ CallBridge ends it after `CALLBRIDGE_SILENCE_HANGUP_SECONDS` (default 6) of pure
 carries comfort noise after hang-up, open an issue.
 
 ### My Mac's microphone / speakers are still the cables after a crash
-CallBridge restores them on exit, including Ctrl-C and `kill`. After a hard crash, pick your devices in System
-Settings → Sound, or: `~/Library/Caches/callbridge/audiodev set-output "MacBook Pro Speakers"`.
+CallBridge restores them on exit, including Ctrl-C, `kill` and the menu-bar Off switch, and again the next time
+`answer` starts. After a hard crash run `callbridge restore`, or pick your devices in System Settings → Sound.
 
 ### "another call is in progress"
 One call per Mac. If nothing is running, a stale process holds the lock: `pkill -f "callbridge (call|answer)"`.

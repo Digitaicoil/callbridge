@@ -3,6 +3,8 @@
   callbridge doctor                          check everything a call needs
   callbridge call +15551234567 "context"     the outbound agent calls this number now
   callbridge answer                          receptionist: answer incoming calls until Ctrl-C
+  callbridge menubar                         the same, switched on and off from the Mac's menu bar
+  callbridge restore                         give the Mac its own mic and speakers back
   callbridge agent create receptionist|sales --business ... --owner ... --about ...
   callbridge agent push receptionist|sales   upload your edited prompt (agents/*.md)
   callbridge agent calls [N]                 recent calls: length, credits, summary
@@ -66,11 +68,29 @@ def cmd_call(s: Settings, a) -> int:
 
 
 def cmd_answer(s: Settings, _a) -> int:
+    from . import macos
     from .call import answer_forever
     try:
         answer_forever(s)
     except KeyboardInterrupt:
-        print("stopped")
+        macos.restore_devices((s.call_in, s.agent_out))
+        print("stopped", flush=True)
+    return 0
+
+
+def cmd_restore(s: Settings, _a) -> int:
+    from . import macos
+    changed = macos.restore_devices((s.call_in, s.agent_out))
+    print(", ".join(f"{k}: {v}" for k, v in changed.items()) or "nothing to restore: the Mac already uses its own devices")
+    return 0
+
+
+def cmd_menubar(s: Settings, _a) -> int:
+    from . import macos
+    app = macos.menubar_app()
+    exe = Path(sys.argv[0]).resolve()   # the menu bar runs `<this callbridge> answer` here, so ./.env still loads
+    subprocess.run(["open", "-n", str(app), "--args", str(exe), str(Path.cwd()), str(s.data_dir)], check=True)
+    print("CallBridge is in the menu bar (the phone icon). Switch the agent on and off from there.")
     return 0
 
 
@@ -139,6 +159,8 @@ def parser() -> argparse.ArgumentParser:
     c.add_argument("number")
     c.add_argument("context", nargs="?", help="who they are and why you're calling; the agent hears it first")
     sub.add_parser("answer", help="receptionist mode: answer incoming calls")
+    sub.add_parser("menubar", help="a menu-bar switch that turns the receptionist on and off")
+    sub.add_parser("restore", help="give the Mac its own mic and speakers back")
     ag = sub.add_parser("agent", help="create and tune the ElevenLabs agents")
     ag.add_argument("action", choices=["create", "push", "show", "calls"])
     ag.add_argument("template", nargs="?", default="receptionist", choices=["receptionist", "sales"])
@@ -161,7 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     a = parser().parse_args(argv)
     s = Settings.from_env()
     return {"doctor": cmd_doctor, "call": cmd_call, "answer": cmd_answer, "agent": cmd_agent,
-            "dnc": cmd_dnc, "cables": cmd_cables}[a.cmd](s, a)
+            "dnc": cmd_dnc, "cables": cmd_cables,
+            "menubar": cmd_menubar, "restore": cmd_restore}[a.cmd](s, a)
 
 
 if __name__ == "__main__":

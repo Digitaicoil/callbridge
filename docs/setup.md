@@ -111,7 +111,8 @@ callbridge doctor
 
 Then a test you control:
 
-- **Receptionist:** `callbridge answer`, and call your iPhone number from another phone.
+- **Receptionist:** `callbridge answer`, and call your iPhone number from another phone. To switch it on and off
+  without a terminal, run `callbridge menubar` once from your CallBridge folder: a phone icon appears in the menu bar.
 - **Outbound:** `callbridge call <your other phone> "test call"`.
 
 The transcript prints live; the record lands wherever your sinks point.

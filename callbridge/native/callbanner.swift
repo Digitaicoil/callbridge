@@ -25,13 +25,18 @@ guard let cmd = argv.first,
 else { exit(0) }
 let app = AXUIElementCreateApplication(nc.processIdentifier)
 var roots = [app]
-if cmd == "texts" && argv.count > 1 {   // texts Accept Answer: only the banner holding those buttons, never other notifications
-    var wins: CFTypeRef?
-    if AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &wins) == .success, let ws = wins as? [AXUIElement] {
-        roots = ws.filter { w in
-            var bs: [AXUIElement] = []
-            walk(w, 0, kAXButtonRole, &bs)
-            return bs.contains { b in argv.dropFirst().contains(attr(b, kAXDescriptionAttribute) ?? "") }
+if cmd == "texts" && argv.count > 1 {   // texts Accept Answer: only the call's own notification, never the ones beside it
+    var bs: [AXUIElement] = []
+    walk(app, 0, kAXButtonRole, &bs)
+    if let b = bs.first(where: { argv.dropFirst().contains(attr($0, kAXDescriptionAttribute) ?? "") }) {
+        var node = b                    // climb from the Accept button to the nearest ancestor that holds text
+        for _ in 0..<12 {
+            var p: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(node, kAXParentAttribute as CFString, &p) == .success, let parent = p else { break }
+            node = parent as! AXUIElement
+            var ts: [AXUIElement] = []
+            walk(node, 0, kAXStaticTextRole, &ts)
+            if !ts.isEmpty { roots = [node]; break }
         }
     }
 }

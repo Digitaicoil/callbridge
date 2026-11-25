@@ -4,6 +4,7 @@ from __future__ import annotations
 import fcntl
 import os
 import re
+import signal
 import sys
 import threading
 import time
@@ -73,6 +74,7 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
         raise Busy("another call is in progress") from None
 
     prev = macos.devices()
+    macos.remember_devices(prev, (s.call_in, s.agent_out))
     macos.audiodev("set-input", s.agent_out), macos.audiodev("set-output", s.call_in)
     record = CallRecord(direction=direction, number=number, started_at=datetime.now().isoformat(timespec="seconds"),
                         context=context)
@@ -121,6 +123,7 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
         for kind in ("input", "output"):   # give the Mac its own mic and speakers back (never "back" to a cable)
             if prev.get(kind) and prev[kind] not in (s.call_in, s.agent_out):
                 macos.audiodev(f"set-{kind}", prev[kind])
+        macos.restore_devices((s.call_in, s.agent_out))   # prev was itself a cable (an earlier crash): fall back
         fcntl.flock(lock, fcntl.LOCK_UN)
 
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -138,8 +141,20 @@ def run_call(s: Settings, direction: str, number: str, context: str = "", place=
     return record
 
 
+def _stop(*_) -> None:
+    raise KeyboardInterrupt
+
+
+def stop_on_sigterm() -> None:
+    """The menu-bar Off switch sends SIGTERM: stop like Ctrl-C, so a call in progress hangs up and the Mac gets its
+    own mic and speakers back (run_call's finally)."""
+    signal.signal(signal.SIGTERM, _stop)
+
+
 def answer_forever(s: Settings, poll_s: float = 0.25) -> None:
     """Receptionist mode: wait for incoming calls on the Mac and answer each one with the inbound agent."""
+    stop_on_sigterm()
+    macos.restore_devices((s.call_in, s.agent_out))      # left on the cables by a call that never finished
     preflight(s)
     print(f"waiting for calls (accept buttons: {', '.join(s.accept_labels)}). Ctrl-C to stop.", flush=True)
     while True:

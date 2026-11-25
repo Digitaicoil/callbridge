@@ -98,6 +98,8 @@ callbridge agent create receptionist \
 # 4. check, then go
 callbridge doctor
 callbridge answer                    # receptionist: answers incoming calls until Ctrl-C
+callbridge menubar                   # the same, with an On/Off switch in the Mac's menu bar
+callbridge restore                   # give the Mac its own mic and speakers back
 callbridge call +15551234567 "Dana's patient, asked about whitening"   # or: one outbound call
 ```
 
