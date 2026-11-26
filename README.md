@@ -201,4 +201,4 @@ Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Secur
 
 ## License
 
-[MIT](LICENSE) © Itai Boublil · Built at [DigitAI](https://digitai.co.il), where we build AI systems for small businesses.
+[MIT](LICENSE) © Itai Boublil · Built at [DigitAI](https://digitai.co.il), where we build AI systems for businesses.
